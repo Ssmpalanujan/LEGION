@@ -88,6 +88,17 @@ class Room(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
+class RoomSwipe(Base):
+    """Per-room swipes for Movie Night (separate from personal Swipe table)."""
+    __tablename__ = "room_swipes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), index=True)
+    liked: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class EvalResult(Base):
     __tablename__ = "eval_results"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
