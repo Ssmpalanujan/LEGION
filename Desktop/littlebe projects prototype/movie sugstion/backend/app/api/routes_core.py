@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.models.db import get_db
 from app.schemas.movie import MovieOut, RecommendOut, SearchOut, movie_to_out
 from app.services import content as svc_content
+from app.services import explain as svc_explain
 from app.services.store import MovieNotFoundError, all_movies, find_best_match, search_movies
 
 router = APIRouter()
@@ -44,13 +45,17 @@ def recommend(
 ):
     try:
         movies = all_movies(db)
-        matched, recs = svc_content.recommend_by_title(movies, title, n=n)
+        matched, ranked = svc_content.recommend_with_scores(movies, title, n=n)
     except MovieNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    items = []
+    for m, cs in ranked:
+        exp = svc_explain.build_reasons(matched, m, content_score=cs)
+        items.append({**movie_to_out(m).model_dump(), **exp})
     return {
         "query": title,
         "matched_title": matched.title,
         "matched": movie_to_out(matched),
-        "recommendations": [m.title for m in recs],
-        "items": [movie_to_out(m) for m in recs],
+        "recommendations": [m.title for m, _ in ranked],
+        "items": items,
     }

@@ -1,0 +1,26 @@
+{
+  "happy": {
+    "genres": ["Comedy", "Animation", "Children", "Musical", "Adventure"],
+    "keywords": ["feel-good", "funny", "uplifting", "cheerful"]
+  },
+  "sad": {
+    "genres": ["Drama"],
+    "keywords": ["emotional", "moving", "cathartic", "tender"]
+  },
+  "bored": {
+    "genres": ["Action", "Adventure", "Thriller", "Sci-Fi", "IMAX"],
+    "keywords": ["fast-paced", "spectacle", "adrenaline", "twist"]
+  },
+  "romantic": {
+    "genres": ["Romance", "Comedy", "Drama"],
+    "keywords": ["love", "date-night", "sweet", "chemistry"]
+  },
+  "thrilling": {
+    "genres": ["Thriller", "Crime", "Mystery", "Horror", "Action"],
+    "keywords": ["suspense", "edge-of-seat", "dark", "intense"]
+  },
+  "family": {
+    "genres": ["Children", "Animation", "Family", "Fantasy", "Adventure"],
+    "keywords": ["all-ages", "wholesome", "together", "cozy"]
+  }
+}

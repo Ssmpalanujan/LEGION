@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes_core import router as core_router
+from app.api.routes_mood import router as mood_router
 from app.api.routes_recommend import router as recommend_router
 from app.api.routes_search import router as search_router
 from app.core.config import get_settings
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
 
     app.include_router(core_router, tags=["core"])
     app.include_router(recommend_router, tags=["recommend"])
+    app.include_router(mood_router, tags=["recommend"])
     app.include_router(search_router, tags=["search"])
     return app
 

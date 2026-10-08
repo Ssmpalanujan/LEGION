@@ -26,12 +26,23 @@ class SearchOut(BaseModel):
     results: list[MovieOut]
 
 
+class RecItemOut(MovieOut):
+    """Rich recommendation item: scores + explainability (Phase 2/4)."""
+
+    content_score: float = 0.0
+    collab_score: float = 0.0
+    hybrid_score: float = 0.0
+    reasons: list[str] = []
+    breakdown: dict = {}
+    friendly: str = ""
+
+
 class RecommendOut(BaseModel):
     query: str
     matched_title: str
     matched: MovieOut | None = None
     recommendations: list[str] = []  # title strings (backwards compatible)
-    items: list[MovieOut] = []  # rich objects
+    items: list[RecItemOut] = []  # rich objects
 
 
 def movie_to_out(m) -> MovieOut:

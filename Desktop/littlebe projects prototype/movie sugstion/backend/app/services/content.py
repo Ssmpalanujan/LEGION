@@ -30,6 +30,12 @@ def content_scores(movies: list[Movie], idx: int) -> list[tuple[int, float]]:
 
 def recommend_by_title(movies: list[Movie], title: str, n: int = 5) -> tuple[Movie, list[Movie]]:
     """Match title (partial, case-insensitive) then return top-n similar movies."""
+    matched, ranked = recommend_with_scores(movies, title, n=n)
+    return matched, [m for m, _ in ranked]
+
+
+def recommend_with_scores(movies: list[Movie], title: str, n: int = 5) -> tuple[Movie, list[tuple[Movie, float]]]:
+    """Same as recommend_by_title but keeps normalized content scores (0..1)."""
     if not movies:
         raise MovieNotFoundError("Movie catalog is empty. Run ingestion first.")
     # Reuse store matching rule via a lightweight local search
@@ -44,7 +50,9 @@ def recommend_by_title(movies: list[Movie], title: str, n: int = 5) -> tuple[Mov
     matched = sorted(cands, key=lambda m: (len(m.title), m.id))[0]
     idx = movies.index(matched)
     ranked = content_scores(movies, idx)[: max(0, n)]
-    return matched, [movies[i] for i, _ in ranked]
+    hi = max((s for _, s in ranked), default=0.0)
+    norm = [(movies[i], (s / hi if hi > 0 else 0.0)) for i, s in ranked]
+    return matched, norm
 
 
 __all__ = ["content_scores", "doc_for", "recommend_by_title", "MovieNotFoundError", "find_best_match"]

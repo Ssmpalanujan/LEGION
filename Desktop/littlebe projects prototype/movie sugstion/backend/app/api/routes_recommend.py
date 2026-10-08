@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.db import get_db
 from app.schemas.movie import movie_to_out
+from app.services import explain as svc_explain
 from app.services import hybrid as svc_hybrid
 from app.services.store import MovieNotFoundError, all_movies, find_best_match
 
@@ -31,19 +32,23 @@ def recommend_hybrid(
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    items = []
+    for m, cs, ks, hs in ranked:
+        exp = svc_explain.build_reasons(target, m, content_score=cs, collab_score=ks)
+        items.append({
+            **movie_to_out(m).model_dump(),
+            "content_score": round(cs, 4),
+            "collab_score": round(ks, 4),
+            "hybrid_score": round(hs, 4),
+            "reasons": exp["reasons"],
+            "breakdown": {**exp["breakdown"], "hybrid": round(hs, 4)},
+            "friendly": exp["friendly"],
+        })
     return {
         "query": title or movie_id,
         "matched_title": target.title,
         "matched": movie_to_out(target),
         "alpha": alpha,
         "recommendations": [m.title for m, _, _, _ in ranked],
-        "items": [
-            {
-                **movie_to_out(m).model_dump(),
-                "content_score": round(cs, 4),
-                "collab_score": round(ks, 4),
-                "hybrid_score": round(hs, 4),
-            }
-            for m, cs, ks, hs in ranked
-        ],
+        "items": items,
     }
