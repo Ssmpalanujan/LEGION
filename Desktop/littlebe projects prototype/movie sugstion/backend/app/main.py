@@ -2,9 +2,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes_admin import router as admin_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_core import router as core_router
 from app.api.routes_mood import router as mood_router
+from app.api.routes_movies import router as movies_router
 from app.api.routes_personal import router as personal_router
 from app.api.routes_recommend import router as recommend_router
 from app.api.routes_search import router as search_router
@@ -37,8 +39,10 @@ def create_app() -> FastAPI:
             db.close()
 
     app.include_router(core_router, tags=["core"])
+    app.include_router(movies_router, tags=["movies"])
     app.include_router(auth_router)
     app.include_router(personal_router)
+    app.include_router(admin_router)
     app.include_router(recommend_router, tags=["recommend"])
     app.include_router(mood_router, tags=["recommend"])
     app.include_router(search_router, tags=["search"])
