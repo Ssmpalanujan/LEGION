@@ -1,4 +1,5 @@
 """Phase-1 routes: health, search, movies, recommend. All responses typed."""
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
@@ -8,7 +9,11 @@ from app.models.db import get_db
 from app.schemas.movie import MovieOut, RecommendOut, SearchOut, movie_to_out
 from app.services import content as svc_content
 from app.services import explain as svc_explain
-from app.services.store import MovieNotFoundError, all_movies, find_best_match, search_movies
+from app.services.store import (
+    MovieNotFoundError,
+    all_movies,
+    search_movies,
+)
 
 TTL_SEARCH = 300
 TTL_RECOMMEND = 600
@@ -20,9 +25,38 @@ router = APIRouter()
 def health():
     s = get_settings()
     degraded = []
+    checks: dict = {}
+    try:
+        from app.models.db import SessionLocal
+
+        db = SessionLocal()
+        try:
+            db.execute(__import__("sqlalchemy").text("SELECT 1"))
+            from app.models.entities import Movie
+
+            checks["db"] = {"ok": True, "movies": db.query(Movie).count()}
+        finally:
+            db.close()
+    except Exception as e:
+        checks["db"] = {"ok": False, "error": str(e)[:200]}
+    try:
+        cache_mod.get_client().ping()
+        checks["redis"] = {"ok": True}
+    except Exception as e:
+        checks["redis"] = {"ok": False, "error": str(e)[:200]}
     if not s.tmdb_api_key:
         degraded.append("tmdb (TMDB_API_KEY missing — MovieLens-only mode)")
-    return {"status": "ok", "tmdb": "ok" if s.tmdb_api_key else "degraded", "degraded": degraded}
+    if not checks.get("db", {}).get("ok"):
+        degraded.append("db")
+    if not checks.get("redis", {}).get("ok"):
+        degraded.append("redis (using in-memory fallback)")
+    status = "ok" if checks.get("db", {}).get("ok") else "degraded"
+    return {
+        "status": status,
+        "tmdb": "ok" if s.tmdb_api_key else "degraded",
+        "degraded": degraded,
+        "checks": checks,
+    }
 
 
 @router.get("/search", response_model=SearchOut)
@@ -70,7 +104,7 @@ def recommend(
         movies = all_movies(db)
         matched, ranked = svc_content.recommend_with_scores(movies, title, n=n)
     except MovieNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     items = []
     for m, cs in ranked:
         exp = svc_explain.build_reasons(matched, m, content_score=cs)

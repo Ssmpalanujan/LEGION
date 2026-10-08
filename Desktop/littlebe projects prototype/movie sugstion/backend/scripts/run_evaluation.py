@@ -3,6 +3,7 @@
 Usage: python backend/scripts/run_evaluation.py [--k 10] [--users 30]
 Prints a Precision@K / Recall@K / NDCG@K / coverage table per algorithm.
 """
+
 import argparse
 from pathlib import Path
 
@@ -36,13 +37,21 @@ def main() -> int:
         db.query(EvalResult).delete()
         for algo in ALGOS:
             m = results[algo]
-            db.add(EvalResult(algo=algo, precision_at_k=m["p"], recall_at_k=m["r"],
-                              ndcg_at_k=m["ndcg"], coverage=m["coverage"]))
+            db.add(
+                EvalResult(
+                    algo=algo,
+                    precision_at_k=m["p"],
+                    recall_at_k=m["r"],
+                    ndcg_at_k=m["ndcg"],
+                    coverage=m["coverage"],
+                )
+            )
         db.commit()
         print(f"{'algo':<12}{'P@K':>8}{'R@K':>8}{'NDCG@K':>9}{'coverage':>10}  users")
         for algo in ALGOS:
             m = results[algo]
-            print(f"{algo:<12}{m['p']:>8.4f}{m['r']:>8.4f}{m['ndcg']:>9.4f}{m['coverage']:>10.4f}  {m['users']}")
+            row = f"{algo:<12}{m['p']:>8.4f}{m['r']:>8.4f}{m['ndcg']:>9.4f}"
+            print(f"{row}{m['coverage']:>10.4f}  {m['users']}")
         return 0
     finally:
         db.close()

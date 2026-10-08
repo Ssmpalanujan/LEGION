@@ -4,6 +4,7 @@ Uses LaBSE if installed (needs network once), else TF-IDF fallback matrix.
 Saves embeddings.npy + ids.json + meta.json. Runtime works without these
 files (builds in-memory index), but precomputing speeds cold starts.
 """
+
 import json
 from pathlib import Path
 
@@ -45,7 +46,9 @@ def main() -> int:
         np.save(str(OUT / "embeddings.npy"), mat / norms)
         backend = "tfidf"
     (OUT / "ids.json").write_text(json.dumps([m.id for m in movies]))
-    (OUT / "meta.json").write_text(json.dumps({"backend": backend, "model": MODEL_NAME, "count": len(movies)}))
+    (OUT / "meta.json").write_text(
+        json.dumps({"backend": backend, "model": MODEL_NAME, "count": len(movies)})
+    )
     print(f"Saved {len(movies)} embeddings ({backend}) to {OUT}")
     return 0
 

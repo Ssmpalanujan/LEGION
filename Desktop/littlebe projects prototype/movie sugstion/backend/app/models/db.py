@@ -1,11 +1,12 @@
 """SQLAlchemy engine/session. SQLite by default (local/tests), Postgres via DATABASE_URL."""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import get_settings
 
 settings = get_settings()
-url = settings.database_url
+url = settings.resolved_database_url()
 connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
 
 engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True, future=True)

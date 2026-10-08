@@ -1,6 +1,7 @@
 """Central configuration. All secrets/URLs come from environment (.env)."""
-from functools import lru_cache
+
 import os
+from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -30,6 +31,21 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         extra = "ignore"
+
+    def resolved_database_url(self) -> str:
+        """Anchor relative SQLite paths to the backend dir.
+
+        Decision: bare `sqlite:///./x.db` used to resolve against the process
+        working directory, so running uvicorn from backend/ and scripts from
+        the repo root silently created TWO different databases. Anchoring to
+        the backend package dir keeps one database per environment.
+        Absolute URLs (e.g. postgres://) are untouched.
+        """
+        url = self.database_url
+        if url.startswith("sqlite:///./") or url.startswith("sqlite://./"):
+            name = url.split("sqlite:///", 1)[-1].lstrip("./")
+            return f"sqlite:///{(self.backend_dir / name).as_posix()}"
+        return url
 
 
 @lru_cache(maxsize=1)
