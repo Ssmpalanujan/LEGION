@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes_ab import router as ab_router
 from app.api.routes_admin import router as admin_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_core import router as core_router
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
     app.include_router(movies_router, tags=["movies"])
     app.include_router(auth_router)
     app.include_router(personal_router)
+    app.include_router(ab_router)
     app.include_router(rooms_router)
     app.include_router(ws_router)
     app.include_router(admin_router)

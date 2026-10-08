@@ -5,7 +5,6 @@ movie ids via Movie.movielens_id, and computes item-item cosine similarity.
 Scores are cosine similarities in [0, 1] (ratings are non-negative).
 Cold-start: movies with no ratings return an empty list (caller falls back).
 """
-import csv
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,24 +29,38 @@ def _load_matrix():
     path = find_ratings_csv()
     if path is None:
         return None, None
-    user_index: dict[int, int] = {}
-    item_index: dict[int, int] = {}
+    import csv as _csv
+
     triples: list[tuple[int, int, float]] = []
     with open(path, newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
+        for row in _csv.DictReader(f):
             try:
                 u, ml, r = int(row["userId"]), int(row["movieId"]), float(row["rating"])
             except (ValueError, KeyError):
                 continue
-            if u not in user_index:
-                user_index[u] = len(user_index)
-            if ml not in item_index:
-                item_index[ml] = len(item_index)
-            triples.append((item_index[ml], user_index[u], r))
-    if not triples:
+            triples.append((ml, u, r))
+    return build_item_matrix(triples)
+
+
+def build_item_matrix(triples: list[tuple[int, int, float]]):
+    """Build (ml_ids, mean-centered item x user matrix) from (ml_id, user, rating).
+
+    Shared by the live service and offline evaluation (which passes train-only
+    triples). Item/user index order follows first-seen order for determinism.
+    """
+    user_index: dict[int, int] = {}
+    item_index: dict[int, int] = {}
+    coded: list[tuple[int, int, float]] = []
+    for ml, u, r in triples:
+        if u not in user_index:
+            user_index[u] = len(user_index)
+        if ml not in item_index:
+            item_index[ml] = len(item_index)
+        coded.append((item_index[ml], user_index[u], r))
+    if not coded:
         return None, None
     mat = np.zeros((len(item_index), len(user_index)), dtype=np.float32)
-    for i, u, r in triples:
+    for i, u, r in coded:
         mat[i, u] = r
     # Mean-center per user (baseline) for better similarity; keep non-negative scale
     means = np.where((mat != 0).sum(axis=0) > 0, mat.sum(axis=0) / np.maximum((mat != 0).sum(axis=0), 1), 0)
@@ -56,6 +69,18 @@ def _load_matrix():
     for ml, i in item_index.items():
         ml_ids[i] = ml
     return ml_ids, centered
+
+
+def cosine_to_target(ml_ids, mat, target_ml: int) -> dict:
+    """Cosine similarity of target to every other item: {ml_id: score in 0..1}."""
+    if target_ml not in ml_ids:
+        return {}
+    norms = np.linalg.norm(mat, axis=1)
+    norms[norms == 0] = 1.0
+    normed = mat / norms[:, np.newaxis]
+    t = normed[ml_ids.index(target_ml)]
+    sims = normed @ t
+    return {ml: round(float(max(0.0, min(1.0, s))), 4) for ml, s in zip(ml_ids, sims) if ml != target_ml}
 
 
 def collab_scores(db_ml_ids: list[int | None], target_ml_id: int) -> dict[int, float]:

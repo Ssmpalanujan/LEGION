@@ -21,10 +21,22 @@ def doc_for(m: Movie) -> str:
 
 def content_scores(movies: list[Movie], idx: int) -> list[tuple[int, float]]:
     """Cosine similarity of movie[idx] to all others, sorted desc (excludes self)."""
+    tfidf, _ = fit_tfidf(movies)
+    return scores_from_matrix(tfidf, idx, len(movies))
+
+
+def fit_tfidf(movies: list[Movie]):
+    """Fit TF-IDF once (evaluation reuses it instead of refitting per user)."""
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
     docs = [doc_for(m) or "unknown" for m in movies]
-    tfidf = TfidfVectorizer().fit_transform(docs)
+    vec = TfidfVectorizer()
+    return vec.fit_transform(docs), vec
+
+
+def scores_from_matrix(tfidf, idx: int, n: int) -> list[tuple[int, float]]:
     sims = cosine_similarity(tfidf[idx], tfidf).flatten()
-    order = sorted(range(len(movies)), key=lambda i: sims[i], reverse=True)
+    order = sorted(range(n), key=lambda i: sims[i], reverse=True)
     return [(i, float(sims[i])) for i in order if i != idx]
 
 
