@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes_core import router as core_router
 from app.api.routes_recommend import router as recommend_router
+from app.api.routes_search import router as search_router
 from app.core.config import get_settings
 from app.models.db import init_db
 
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
 
     app.include_router(core_router, tags=["core"])
     app.include_router(recommend_router, tags=["recommend"])
+    app.include_router(search_router, tags=["search"])
     return app
 
 
