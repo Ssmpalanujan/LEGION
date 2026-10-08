@@ -286,3 +286,50 @@ code { background: rgba(255,255,255,0.1); padding: 0.1rem 0.4rem; border-radius:
 .tbl { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .tbl th, .tbl td { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 .tbl th { color: var(--dim); font-weight: 600; }
+
+/* LIGHT THEME (toggle in navbar; persisted in localStorage) */
+:root[data-theme='light'] {
+  --bg: #f2f4fa;
+  --bg2: #ffffff;
+  --card: #ffffff;
+  --line: rgba(15, 20, 35, 0.14);
+  --ink: #14141c;
+  --dim: rgba(20, 22, 35, 0.64);
+  --gold: #b8860b;
+}
+:root[data-theme='light'] body { color-scheme: light; }
+:root[data-theme='light'] .nav { background: rgba(255, 255, 255, 0.88); }
+:root[data-theme='light'] .nav-search input { background: rgba(15, 20, 35, 0.06); }
+:root[data-theme='light'] .nav-search input:focus { background: rgba(15, 20, 35, 0.09); }
+:root[data-theme='light'] .nav-suggest { background: #ffffff; box-shadow: 0 20px 50px rgba(20, 30, 60, 0.18); }
+:root[data-theme='light'] .nav-suggest button { color: var(--ink); }
+:root[data-theme='light'] .nav-suggest button:hover { background: rgba(229, 9, 20, 0.1); }
+:root[data-theme='light'] .billboard,
+:root[data-theme='light'] .billboard.small { background: linear-gradient(135deg, #dfe6f5, #f2f4fa); }
+:root[data-theme='light'] .billboard-shade {
+  background: linear-gradient(0deg, var(--bg) 4%, rgba(242, 244, 250, 0.6) 50%, rgba(242, 244, 250, 0.25)),
+    linear-gradient(90deg, rgba(242, 244, 250, 0.9) 0%, transparent 60%);
+}
+:root[data-theme='light'] .billboard h1 { text-shadow: none; }
+:root[data-theme='light'] .overview { color: rgba(20, 22, 35, 0.85); }
+:root[data-theme='light'] .btn.primary { background: var(--red); color: #fff; }
+:root[data-theme='light'] .btn.primary:hover { background: var(--red-dark); }
+:root[data-theme='light'] .btn.ghost { background: rgba(15, 20, 35, 0.07); color: var(--ink); }
+:root[data-theme='light'] .btn.ghost:hover { background: rgba(15, 20, 35, 0.12); }
+:root[data-theme='light'] .fallback { background: linear-gradient(135deg, #dde4f2, #eef1f8); }
+:root[data-theme='light'] .rail-save { background: rgba(255, 255, 255, 0.85); color: #14141c; }
+:root[data-theme='light'] .star { color: rgba(20, 22, 35, 0.25); }
+:root[data-theme='light'] .chips button { color: var(--ink); }
+:root[data-theme='light'] .modal { box-shadow: 0 30px 80px rgba(20, 30, 60, 0.3); }
+:root[data-theme='light'] .modal-head button { color: var(--ink); }
+:root[data-theme='light'] .browse-bar input, :root[data-theme='light'] .browse-bar select,
+:root[data-theme='light'] .panel input { background: #fff; }
+:root[data-theme='light'] .panel input { background: var(--bg); }
+:root[data-theme='light'] .bar { background: rgba(15, 20, 35, 0.12); }
+:root[data-theme='light'] .swipe-btns button { background: #fff; color: #14141c; }
+:root[data-theme='light'] code { background: rgba(15, 20, 35, 0.08); }
+.theme-toggle {
+  background: none; border: 1px solid var(--line); color: var(--ink);
+  border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.theme-toggle:hover { border-color: var(--red); }

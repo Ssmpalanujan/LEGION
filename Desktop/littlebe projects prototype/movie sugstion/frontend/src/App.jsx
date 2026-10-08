@@ -154,6 +154,7 @@ export default function App() {
   const [ratings, setRatings] = useState(() => loadJSON('cine-ratings', {}))
   const [user, setUser] = useState(null)
   const [taste, setTaste] = useState(null)
+  const [theme, setTheme] = useState(() => localStorage.getItem('cine-theme') || 'dark')
   const alphaTimer = useRef(null)
   const viewRef = useRef(view)
   viewRef.current = view
@@ -164,6 +165,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('cine-ratings', JSON.stringify(ratings))
   }, [ratings])
+  useEffect(() => {
+    localStorage.setItem('cine-theme', theme)
+    document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark'
+  }, [theme])
 
   // ---- auth bootstrap ----
   const refreshMe = useCallback(async () => {
@@ -427,6 +432,14 @@ export default function App() {
               <button className={view.name === 'admin' ? 'active' : ''} onClick={() => go('admin')}>Admin</button>
             )}
           </nav>
+          <button
+            className="theme-toggle"
+            onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          >
+            {theme === 'light' ? '☀️' : '🌙'}
+          </button>
           <div className="nav-search">
             <input
               value={query}
