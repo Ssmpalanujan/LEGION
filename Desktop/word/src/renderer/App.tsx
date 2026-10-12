@@ -55,6 +55,7 @@ import { CropOverlay } from './features/images/CropOverlay'
 import { InsertImageModal } from './features/images/InsertImageModal'
 import { ImageEditorModal } from './features/images/ImageEditorModal'
 import { parseEdits, type ImageEdits } from './features/images/editorTypes'
+import { SmartToolsModal } from './features/images/SmartToolsModal'
 import type { DocTab, PageSettings, ViewMode, DocComment, StyleDef, Snapshot, AppSettings } from './types'
 import { BUILTIN_STYLES } from './types'
 import { base64ToUtf8, utf8ToBase64, extOf, docxToHtml, htmlToDocxBlob, blobToBase64 } from './lib/files'
@@ -122,6 +123,7 @@ export default function App() {
   const [mergeOpen, setMergeOpen] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [cropTarget, setCropTarget] = useState<{ pos: number; src: string } | null>(null)
+  const [smartOpen, setSmartOpen] = useState(false)
   const [editorTarget, setEditorTarget] = useState<{ pos: number; baseSrc: string; initial: ImageEdits } | null>(null)
   const [focusMode, setFocusMode] = useState(false)
   const [longDoc, setLongDoc] = useState(false)
@@ -1108,6 +1110,7 @@ export default function App() {
           setImageModalOpen(false)
           setCropTarget(null)
           setEditorTarget(null)
+          setSmartOpen(false)
         }
         return
       }
@@ -1344,6 +1347,7 @@ export default function App() {
             onClose={() => setRightPane(null)}
             onOpenCrop={openCropForSelection}
             onOpenEditor={() => window.dispatchEvent(new CustomEvent('atlas:edit-image'))}
+            onOpenSmart={() => setSmartOpen(true)}
           />
         )}
       </div>
@@ -1406,6 +1410,20 @@ export default function App() {
           onClose={() => setEditorTarget(null)}
         />
       )}
+      {smartOpen &&
+        (() => {
+          const found = editor ? selectedAtlasImage(editor) : null
+          const attrs = found?.node.attrs as unknown as { src: string } | undefined
+          return (
+            <SmartToolsModal
+              editor={editor}
+              imagePos={found ? found.pos : null}
+              imageSrc={attrs?.src ?? ''}
+              onInsertImage={(u, alt) => void insertAtlasFromDataUrl(u, alt)}
+              onClose={() => setSmartOpen(false)}
+            />
+          )
+        })()}
     </div>
   )
 }

@@ -14,6 +14,7 @@ interface FormatPanelProps {
   onClose: () => void
   onOpenCrop: () => void
   onOpenEditor: () => void
+  onOpenSmart: () => void
 }
 
 function useSelectedAtlas(editor: Editor | null): { pos: number; attrs: AtlasImageAttrs } | null {
@@ -68,7 +69,7 @@ function Seg<T extends string>({ options, value, onPick, aria }: { options: { v:
   )
 }
 
-export function FormatPanel({ editor, onClose, onOpenCrop, onOpenEditor }: FormatPanelProps) {
+export function FormatPanel({ editor, onClose, onOpenCrop, onOpenEditor, onOpenSmart }: FormatPanelProps) {
   const sel = useSelectedAtlas(editor)
   const fileRef = useRef<HTMLInputElement>(null)
   const [unit, setUnit] = useState<SizeUnit>('px')
@@ -286,6 +287,7 @@ export function FormatPanel({ editor, onClose, onOpenCrop, onOpenEditor }: Forma
           <div className={secTitle}>Content</div>
           <div className="space-y-1.5 px-1 py-1">
             <button onClick={onOpenEditor} title="Open the built-in editor: adjust, filters, annotate (double-click the image works too)" className="w-full rounded bg-[#2B579A] py-1 text-[12px] text-white hover:bg-[#1F3F70]">Edit image…</button>
+            <button onClick={onOpenSmart} title="Smart tools: remove background, OCR, AI alt text, generate, stock photos, icons" className="w-full rounded border border-[#2B579A] py-1 text-[12px] text-[#2B579A] hover:bg-[#D6E4F7] dark:text-sky-200">Smart tools…</button>
             <label className="block text-[12px]" title="Caption shown under the image and exported to Word.">
               <span className="text-neutral-600 dark:text-neutral-300">Caption</span>
               <input aria-label="Image caption" value={sel.attrs.caption} onChange={(e) => patch({ caption: e.target.value })} placeholder="Add a caption…" className={`${inputCls} mt-0.5 w-full`} />

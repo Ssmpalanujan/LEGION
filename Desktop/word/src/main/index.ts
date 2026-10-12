@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog, Menu, session, desktopCapturer } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, Menu, session, desktopCapturer, safeStorage } from 'electron'
 import { join } from 'path'
 import { readFile, writeFile } from 'fs/promises'
 import Store from 'electron-store'
@@ -402,6 +402,49 @@ function registerIpc(getWin: () => BrowserWindow | null): void {
       return { canceled: false, dataUrl: primary.thumbnail.toDataURL() }
     } catch (err) {
       return { canceled: true, error: String(err) }
+    }
+  })
+
+  // API keys are never stored in plain settings: encrypted with OS keychain when available
+  const memorySecrets = new Map<string, string>()
+  const secretAvailable = () => {
+    try {
+      return safeStorage.isEncryptionAvailable()
+    } catch {
+      return false
+    }
+  }
+  ipcMain.handle('secrets:set', async (_e, service: string, value: string) => {
+    try {
+      if (secretAvailable()) {
+        store.set(`secret:${service}` as never, safeStorage.encryptString(value).toString('base64') as never)
+        return { ok: true, persistent: true }
+      }
+      memorySecrets.set(service, value)
+      return { ok: true, persistent: false }
+    } catch (err) {
+      return { ok: false, error: String(err) }
+    }
+  })
+  ipcMain.handle('secrets:get', async (_e, service: string) => {
+    try {
+      if (secretAvailable()) {
+        const raw = store.get(`secret:${service}` as never) as unknown as string | undefined
+        if (!raw) return { ok: true, value: '', persistent: true }
+        return { ok: true, value: safeStorage.decryptString(Buffer.from(raw, 'base64')), persistent: true }
+      }
+      return { ok: true, value: memorySecrets.get(service) ?? '', persistent: false }
+    } catch (err) {
+      return { ok: false, error: String(err) }
+    }
+  })
+  ipcMain.handle('secrets:delete', async (_e, service: string) => {
+    try {
+      store.delete(`secret:${service}` as never)
+      memorySecrets.delete(service)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: String(err) }
     }
   })
 }

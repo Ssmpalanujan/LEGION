@@ -15,6 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
     "@tiptap/extension-character-count": "^2.6.6",
     "@tiptap/extension-color": "^2.6.6",
     "@tiptap/extension-font-family": "^2.6.6",
@@ -38,7 +39,8 @@
     "lucide-react": "^0.453.0",
     "mammoth": "^1.9.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/katex": "^0.16.8",

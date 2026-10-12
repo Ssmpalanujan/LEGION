@@ -27,6 +27,9 @@ export interface ElectronAPI {
   print: (preview: boolean) => Promise<{ ok: boolean }>
   pickImage: () => Promise<{ canceled: boolean; dataUrl?: string }>
   captureScreenshot: () => Promise<{ canceled: boolean; dataUrl?: string; error?: string }>
+  secretSet: (service: string, value: string) => Promise<{ ok: boolean; persistent?: boolean; error?: string }>
+  secretGet: (service: string) => Promise<{ ok: boolean; value?: string; persistent?: boolean; error?: string }>
+  secretDelete: (service: string) => Promise<{ ok: boolean; error?: string }>
   onMenuAction: (cb: (action: string, payload?: unknown) => void) => () => void
 }
 
@@ -51,6 +54,9 @@ const electronAPI: ElectronAPI = {
   print: (preview: boolean) => ipcRenderer.invoke('file:print', preview),
   pickImage: () => ipcRenderer.invoke('file:pickImage'),
   captureScreenshot: () => ipcRenderer.invoke('image:screenshot'),
+  secretSet: (service: string, value: string) => ipcRenderer.invoke('secrets:set', service, value),
+  secretGet: (service: string) => ipcRenderer.invoke('secrets:get', service),
+  secretDelete: (service: string) => ipcRenderer.invoke('secrets:delete', service),
   onMenuAction: (cb) => {
     const listener = (_e: unknown, action: string, payload?: unknown) => cb(action, payload)
     ipcRenderer.on('menu:action', listener as never)
