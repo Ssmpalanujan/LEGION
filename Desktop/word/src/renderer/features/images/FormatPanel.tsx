@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/core'
 import { X } from 'lucide-react'
 import type { AtlasImageAttrs, CropPreset, SizeUnit, WrapMode, ImageAlign, BorderStyle } from './types'
 import { unitsToPx, pxToUnits, clampCropBox, cropPresetBox } from './math'
+import { PICTURE_STYLES } from './collage'
 import { selectedAtlasImage, setAtlasAttrsAt } from './imageNode'
 import { fileToAtlasSources } from './downscale'
 import { compressSrc } from './export'
@@ -258,6 +259,18 @@ export function FormatPanel({ editor, onClose, onOpenCrop, onOpenEditor, onOpenS
           </div>
 
           <div className={secTitle}>Picture style</div>
+          <div className="grid grid-cols-4 gap-1 px-1 py-1" role="group" aria-label="Picture styles gallery">
+            {PICTURE_STYLES.map((st) => (
+              <button
+                key={st.id}
+                onClick={() => patch({ border: st.patch.border, radius: st.patch.radius, shadow: st.patch.shadow, reflection: st.patch.reflection })}
+                title={`${st.tip} — click to apply`}
+                className="rounded border border-neutral-300 px-1 py-1 text-[11px] hover:border-[#2B579A] hover:bg-[#D6E4F7] dark:border-neutral-600"
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
           <Row label="Border" tip="Outline around the image frame.">
             <input type="checkbox" aria-label="Border enabled" checked={!!sel.attrs.border} onChange={(e) => patch({ border: e.target.checked ? { color: '#2B579A', width: 2, style: 'solid' } : null })} />
           </Row>

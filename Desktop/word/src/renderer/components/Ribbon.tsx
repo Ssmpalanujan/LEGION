@@ -10,7 +10,7 @@ import {
   ListChecks, BookOpen, SpellCheck, ZoomIn, ZoomOut, Ruler as RulerIcon,
   MoonStar, FileText, SlidersHorizontal, Sigma, Shapes, Square, Asterisk, Bookmark,
   MessageSquare, PenLine, Check, X, ListTree, History, LayoutTemplate, Settings as SettingsIcon,
-  Lock, Eye, Maximize, Mail, Type, PanelLeft, RefreshCw, ImagePlus, Camera
+  Lock, Eye, Maximize, Mail, Type, PanelLeft, RefreshCw, ImagePlus, Camera, LayoutGrid, Video, Crop as CropIcon, Download
 } from 'lucide-react'
 import type { PageSettings } from '../types'
 import { TableGridPicker } from './Dialogs'
@@ -34,6 +34,10 @@ export interface AdvActions {
   openImageUrl?: () => void
   openScreenshot?: () => void
   openPictureFormat?: () => void
+  openCollage?: () => void
+  openWebcam?: () => void
+  openClip?: () => void
+  openExportImage?: () => void
   openNav?: () => void
   openHistory?: () => void
   openTemplates?: () => void
@@ -524,6 +528,18 @@ export default function Ribbon(props: RibbonProps) {
               </BarButton>
               <BarButton tip="Picture Format panel for the selected image" onClick={A.openPictureFormat}>
                 <SlidersHorizontal size={17} />
+              </BarButton>
+              <BarButton tip="Photo grid / collage layouts (2x2, 3x1, …)" onClick={A.openCollage}>
+                <LayoutGrid size={17} />
+              </BarButton>
+              <BarButton tip="Take a photo with the webcam" onClick={A.openWebcam}>
+                <Video size={17} />
+              </BarButton>
+              <BarButton tip="Clip a region of the screen" onClick={A.openClip}>
+                <CropIcon size={17} />
+              </BarButton>
+              <BarButton tip="Save a document picture as PNG, JPG, or WebP" onClick={A.openExportImage}>
+                <Download size={17} />
               </BarButton>
               <BarButton tip="Insert hyperlink" onClick={props.onOpenLink}>
                 <Link2 size={17} />

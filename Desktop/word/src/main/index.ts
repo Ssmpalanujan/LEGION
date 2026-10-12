@@ -202,9 +202,47 @@ function createWindow(): BrowserWindow {
     /* noop */
   }
 
-  // Right-click context menu: spelling suggestions + edit commands
+  // Webcam capture: allow camera access for the app window (dev server + file origins)
+  try {
+    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+      if (permission === 'media') callback(true)
+      else callback(false)
+    })
+  } catch {
+    /* noop */
+  }
+
+  // Right-click context menu: spelling suggestions + edit commands,
+  // or image actions when right-clicking a document picture
   win.webContents.on('context-menu', (_e, params) => {
     const { misspelledWord, dictionarySuggestions, editFlags } = params
+    if (params.mediaType === 'image') {
+      Menu.buildFromTemplate([
+        { label: 'Edit Image…', click: () => win.webContents.send('menu:action', 'image:edit') },
+        { label: 'Crop…', click: () => win.webContents.send('menu:action', 'image:crop') },
+        { label: 'Rotate Right', click: () => win.webContents.send('menu:action', 'image:rotateR') },
+        { label: 'Rotate Left', click: () => win.webContents.send('menu:action', 'image:rotateL') },
+        { label: 'Flip Horizontal', click: () => win.webContents.send('menu:action', 'image:flipH') },
+        { label: 'Flip Vertical', click: () => win.webContents.send('menu:action', 'image:flipV') },
+        { type: 'separator' as const },
+        {
+          label: 'Copy Picture',
+          click: () => {
+            try {
+              win.webContents.copyImageAt(params.x, params.y)
+            } catch {
+              win.webContents.copy()
+            }
+          }
+        },
+        { label: 'Save as Picture…', click: () => win.webContents.send('menu:action', 'image:save') },
+        { label: 'Set as Page Background', click: () => win.webContents.send('menu:action', 'image:background') },
+        { type: 'separator' as const },
+        { label: 'Remove Background…', click: () => win.webContents.send('menu:action', 'image:bgremove') },
+        { label: 'Extract Text (OCR)…', click: () => win.webContents.send('menu:action', 'image:ocr') }
+      ]).popup({ window: win })
+      return
+    }
     const items: Electron.MenuItemConstructorOptions[] = []
 
     if (misspelledWord && (store.get('spellcheck') as boolean)) {
@@ -321,7 +359,13 @@ function registerIpc(getWin: () => BrowserWindow | null): void {
             ? [{ name: 'HTML', extensions: ['html'] }]
             : format === 'pdf'
               ? [{ name: 'PDF', extensions: ['pdf'] }]
-              : [{ name: 'All Files', extensions: ['*'] }]
+              : format === 'png'
+                ? [{ name: 'PNG Image', extensions: ['png'] }]
+                : format === 'jpg'
+                  ? [{ name: 'JPEG Image', extensions: ['jpg', 'jpeg'] }]
+                  : format === 'webp'
+                    ? [{ name: 'WebP Image', extensions: ['webp'] }]
+                    : [{ name: 'All Files', extensions: ['*'] }]
     const res = await dialog.showSaveDialog(win ?? undefined as never, {
       defaultPath: defaultName,
       filters

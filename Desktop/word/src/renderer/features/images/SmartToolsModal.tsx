@@ -12,6 +12,7 @@ type Tab = 'bg' | 'ocr' | 'alt' | 'generate' | 'stock' | 'icons'
 
 interface SmartToolsModalProps {
   editor: Editor | null
+  initialTab?: Tab
   imagePos: number | null
   imageSrc: string
   onInsertImage: (dataUrl: string, alt?: string) => void
@@ -73,8 +74,8 @@ function KeyField({ service, label, tip }: { service: string; label: string; tip
   )
 }
 
-export function SmartToolsModal({ editor, imagePos, imageSrc, onInsertImage, onClose }: SmartToolsModalProps) {
-  const [tab, setTab] = useState<Tab>(imagePos !== null ? 'bg' : 'generate')
+export function SmartToolsModal({ editor, initialTab, imagePos, imageSrc, onInsertImage, onClose }: SmartToolsModalProps) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? (imagePos !== null ? 'bg' : 'generate'))
   const [busy, setBusy] = useState('')
   const [progress, setProgress] = useState(0)
   const [bgResult, setBgResult] = useState('')

@@ -41,18 +41,19 @@ const bool = (v: string | null, fallback: boolean): boolean => {
 export function attrsFromElement(el: HTMLElement): Partial<AtlasImageAttrs> {
   if (el.tagName.toLowerCase() === 'img') {
     const img = el as HTMLImageElement
-    // Round-trip payload written by docx export lives in alt text
-    const meta = metaFromAlt(img.getAttribute('alt') ?? '')
+    // Round-trip payload written by docx export lives in alt text (keeps human text after it)
+    const { meta, text } = splitAlt(img.getAttribute('alt') ?? '')
+    const layout = meta ? metaFromAlt(JSON.stringify(meta)) : null
     const w = num(img.getAttribute('width'), 0)
     return {
       ...DEFAULT_ATLAS_ATTRS,
       src: img.getAttribute('src') ?? '',
       originalSrc: img.getAttribute('src') ?? '',
-      alt: meta ? '' : (img.getAttribute('alt') ?? ''),
-      width: w > 0 ? w : null,
+      alt: text,
+      width: w > 0 ? w : (layout?.width ?? null),
       naturalWidth: num(img.getAttribute('data-nw'), w),
       naturalHeight: num(img.getAttribute('data-nh'), 0),
-      ...(meta ?? {})
+      ...(layout ?? {})
     }
   }
   return {
@@ -316,6 +317,28 @@ export function setAtlasAttrsAt(editor: any, pos: number, patch: Partial<AtlasIm
   if (!node || node.type.name !== ATLAS_IMAGE) return
   const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...patch })
   editor.view.dispatch(tr)
+}
+
+export interface ScannedImage {
+  pos: number
+  src: string
+  alt: string
+  naturalWidth: number
+  naturalHeight: number
+  crop: AtlasImageAttrs['crop']
+  cropShape: AtlasImageAttrs['cropShape']
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function scanDocumentImages(editor: any): ScannedImage[] {
+  const out: ScannedImage[] = []
+  editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, pos: number) => {
+    if (node.type.name !== ATLAS_IMAGE) return
+    const a = node.attrs as unknown as AtlasImageAttrs
+    if (!a.src) return
+    out.push({ pos, src: a.src, alt: a.alt || `Image ${out.length + 1}`, naturalWidth: a.naturalWidth, naturalHeight: a.naturalHeight, crop: a.crop, cropShape: a.cropShape })
+  })
+  return out
 }
 
 /* ---------------- Image group (collage / grouping container) ---------------- */

@@ -56,6 +56,11 @@ import { InsertImageModal } from './features/images/InsertImageModal'
 import { ImageEditorModal } from './features/images/ImageEditorModal'
 import { parseEdits, type ImageEdits } from './features/images/editorTypes'
 import { SmartToolsModal } from './features/images/SmartToolsModal'
+import { CollageModal } from './features/images/CollageModal'
+import { ExportImageModal } from './features/images/ExportImageModal'
+import { WebcamModal } from './features/images/WebcamModal'
+import { renderCroppedBytes } from './features/images/export'
+import type { CropShape } from './features/images/types'
 import type { DocTab, PageSettings, ViewMode, DocComment, StyleDef, Snapshot, AppSettings } from './types'
 import { BUILTIN_STYLES } from './types'
 import { base64ToUtf8, utf8ToBase64, extOf, docxToHtml, htmlToDocxBlob, blobToBase64 } from './lib/files'
@@ -124,6 +129,13 @@ export default function App() {
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [cropTarget, setCropTarget] = useState<{ pos: number; src: string } | null>(null)
   const [smartOpen, setSmartOpen] = useState(false)
+  const [smartTab, setSmartTab] = useState<'bg' | 'ocr' | 'alt' | 'generate' | 'stock' | 'icons' | undefined>(undefined)
+  const [collageOpen, setCollageOpen] = useState(false)
+  const [exportPos, setExportPos] = useState<number | null | undefined>(undefined)
+  const [webcamOpen, setWebcamOpen] = useState(false)
+  const [clipSrc, setClipSrc] = useState<string | null>(null)
+  // last image right-clicked (main-process image menu acts on this)
+  const imageMenuRef = useRef<{ pos: number; src: string } | null>(null)
   const [editorTarget, setEditorTarget] = useState<{ pos: number; baseSrc: string; initial: ImageEdits } | null>(null)
   const [focusMode, setFocusMode] = useState(false)
   const [longDoc, setLongDoc] = useState(false)
@@ -876,6 +888,66 @@ export default function App() {
     [editor, cropTarget]
   )
 
+  // Screen clipping: region-select on a screenshot, then insert the clip
+  const startClip = useCallback(async () => {
+    if (!api?.captureScreenshot) {
+      alert('Screen clipping needs the desktop app (Electron).')
+      return
+    }
+    const res = await api.captureScreenshot()
+    if (res.canceled || !res.dataUrl) {
+      if (res.error) alert(`Screenshot failed: ${res.error}`)
+      return
+    }
+    setClipSrc(res.dataUrl)
+  }, [api])
+
+  const applyClip = useCallback(
+    async (box: CropBox, shape: CropShape) => {
+      if (!clipSrc) return
+      try {
+        const out = await renderCroppedBytes(clipSrc, box, shape, 'image/png')
+        let bin = ''
+        for (let i = 0; i < out.bytes.length; i += 0x8000) {
+          bin += String.fromCharCode(...out.bytes.subarray(i, i + 0x8000))
+        }
+        await insertAtlasFromDataUrl(`data:image/png;base64,${btoa(bin)}`, 'Screen clipping')
+      } catch (err) {
+        alert(`Clip failed: ${err instanceof Error ? err.message : err}`)
+      } finally {
+        setClipSrc(null)
+      }
+    },
+    [clipSrc, insertAtlasFromDataUrl]
+  )
+
+  // Track the image under the native context menu (main shows image actions for it)
+  useEffect(() => {
+    if (!editor) return
+    const dom = editor.view.dom as HTMLElement
+    const onCtx = (e: MouseEvent) => {
+      imageMenuRef.current = null
+      const frame = (e.target as HTMLElement).closest?.('.atlas-frame')
+      if (!frame || !editor) return
+      try {
+        const pos = editor.view.posAtDOM(frame, 0)
+        const node = editor.state.doc.nodeAt(pos)
+        if (node?.type.name === 'atlasImage') {
+          imageMenuRef.current = { pos, src: (node.attrs as unknown as { src: string }).src }
+        }
+      } catch {
+        /* noop */
+      }
+    }
+    dom.addEventListener('contextmenu', onCtx)
+    return () => dom.removeEventListener('contextmenu', onCtx)
+  }, [editor])
+
+  const openSmart = useCallback((tab?: 'bg' | 'ocr' | 'alt' | 'generate' | 'stock' | 'icons') => {
+    setSmartTab(tab)
+    setSmartOpen(true)
+  }, [])
+
   // Auto-open Picture Format when an image is selected (Word-style contextual tab)
   // + double-click opens the built-in image editor (atlas:edit-image from the NodeView)
   useEffect(() => {
@@ -1010,6 +1082,64 @@ export default function App() {
         case 'insert:image':
           pickImage()
           break
+        case 'image:edit': {
+          const t = imageMenuRef.current
+          if (!editor || !t) break
+          editor.chain().focus().setNodeSelection(t.pos).run()
+          window.dispatchEvent(new CustomEvent('atlas:edit-image'))
+          break
+        }
+        case 'image:crop': {
+          const t = imageMenuRef.current
+          if (!editor || !t) break
+          setCropTarget({ pos: t.pos, src: t.src })
+          break
+        }
+        case 'image:rotateL':
+        case 'image:rotateR': {
+          const t = imageMenuRef.current
+          if (!editor || !t) break
+          const node = editor.state.doc.nodeAt(t.pos)
+          if (node?.type.name !== 'atlasImage') break
+          const cur = (node.attrs as unknown as { rotation: 0 | 90 | 180 | 270 }).rotation ?? 0
+          const steps = [0, 90, 180, 270] as const
+          const next = steps[(steps.indexOf(cur) + (action === 'image:rotateR' ? 1 : 3)) % 4]
+          setAtlasAttrsAt(editor, t.pos, { rotation: next })
+          break
+        }
+        case 'image:flipH':
+        case 'image:flipV': {
+          const t = imageMenuRef.current
+          if (!editor || !t) break
+          const node = editor.state.doc.nodeAt(t.pos)
+          if (node?.type.name !== 'atlasImage') break
+          const attrs = node.attrs as unknown as { flipH: boolean; flipV: boolean }
+          if (action === 'image:flipH') setAtlasAttrsAt(editor, t.pos, { flipH: !attrs.flipH })
+          else setAtlasAttrsAt(editor, t.pos, { flipV: !attrs.flipV })
+          break
+        }
+        case 'image:save': {
+          const t = imageMenuRef.current
+          setExportPos(t ? t.pos : null)
+          break
+        }
+        case 'image:background': {
+          const t = imageMenuRef.current
+          if (!editor || !t) break
+          try {
+            const w = (editor.view.dom as HTMLElement).clientWidth || 640
+            setAtlasAttrsAt(editor, t.pos, { wrap: 'behind', posX: 0.5, posY: 0.35, z: 0, align: 'center', width: Math.round(w) })
+          } catch {
+            /* noop */
+          }
+          break
+        }
+        case 'image:bgremove':
+          openSmart('bg')
+          break
+        case 'image:ocr':
+          openSmart('ocr')
+          break
         case 'insert:link':
           setLinkOpen(true)
           break
@@ -1088,7 +1218,7 @@ export default function App() {
       }
     })
     return off
-  }, [api, editor, exportAs, newDoc, openDoc, pickImage, saveDoc, toggleFullscreen])
+  }, [api, editor, exportAs, newDoc, openDoc, pickImage, saveDoc, toggleFullscreen, openSmart])
 
   // ---------- keyboard shortcuts ----------
   useEffect(() => {
@@ -1111,6 +1241,10 @@ export default function App() {
           setCropTarget(null)
           setEditorTarget(null)
           setSmartOpen(false)
+          setCollageOpen(false)
+          setExportPos(undefined)
+          setWebcamOpen(false)
+          setClipSrc(null)
         }
         return
       }
@@ -1182,6 +1316,13 @@ export default function App() {
     openMerge: () => setMergeOpen(true),
     openImageUrl: () => setImageModalOpen(true),
     openScreenshot: () => void captureScreenshot(),
+    openCollage: () => setCollageOpen(true),
+    openWebcam: () => setWebcamOpen(true),
+    openClip: () => void startClip(),
+    openExportImage: () => {
+      const found = editor ? selectedAtlasImage(editor) : null
+      setExportPos(found ? found.pos : null)
+    },
     openPictureFormat: () => setRightPane((p) => (p === 'images' ? null : 'images')),
     openNav: () => setLeftPane((p) => (p === 'nav' ? null : 'nav')),
     openHistory: () => setRightPane((p) => (p === 'history' ? null : 'history')),
@@ -1417,13 +1558,37 @@ export default function App() {
           return (
             <SmartToolsModal
               editor={editor}
+              initialTab={smartTab}
               imagePos={found ? found.pos : null}
               imageSrc={attrs?.src ?? ''}
               onInsertImage={(u, alt) => void insertAtlasFromDataUrl(u, alt)}
-              onClose={() => setSmartOpen(false)}
+              onClose={() => {
+                setSmartOpen(false)
+                setSmartTab(undefined)
+              }}
             />
           )
         })()}
+      {collageOpen && <CollageModal editor={editor} onClose={() => setCollageOpen(false)} />}
+      {exportPos !== undefined && (
+        <ExportImageModal editor={editor} initialPos={exportPos} onClose={() => setExportPos(undefined)} />
+      )}
+      {webcamOpen && (
+        <WebcamModal
+          onCapture={(shot) => {
+            setWebcamOpen(false)
+            void insertAtlasFromDataUrl(shot, 'Webcam photo')
+          }}
+          onClose={() => setWebcamOpen(false)}
+        />
+      )}
+      {clipSrc && (
+        <CropOverlay
+          src={clipSrc}
+          onApply={(box, shape) => void applyClip(box, shape)}
+          onClose={() => setClipSrc(null)}
+        />
+      )}
     </div>
   )
 }
