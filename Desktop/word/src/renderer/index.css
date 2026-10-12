@@ -1,0 +1,368 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --word-blue: #2b579a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ---- Ribbon tooltip ---- */
+.ribbon-tip {
+  position: relative;
+}
+.ribbon-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-2px);
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 100;
+}
+.dark .ribbon-tip::after {
+  background: #e5e5e5;
+  color: #111;
+}
+.ribbon-tip:hover::after {
+  opacity: 1;
+}
+
+/* ---- Tiptap editor ---- */
+.tiptap {
+  outline: none;
+  min-height: 100%;
+ Caret-color: var(--word-blue);
+}
+.tiptap p {
+  margin: 0 0 0.5em 0;
+  line-height: 1.5;
+}
+.tiptap h1 {
+  font-size: 2em;
+  font-weight: 600;
+  color: var(--word-blue);
+  margin: 0.4em 0 0.3em;
+}
+.tiptap h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  color: var(--word-blue);
+  margin: 0.4em 0 0.3em;
+}
+.tiptap h3 {
+  font-size: 1.17em;
+  font-weight: 600;
+  margin: 0.4em 0 0.3em;
+}
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.6em;
+  margin: 0.4em 0;
+}
+.tiptap blockquote {
+  border-left: 3px solid var(--word-blue);
+  margin-left: 0;
+  padding-left: 1em;
+  color: #666;
+}
+
+/* A4 page */
+.a4-page {
+  width: 210mm;
+  max-width: 100%;
+  min-height: 297mm;
+  background: #fff;
+  color: #111;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 8px 28px rgba(0, 0, 0, 0.28);
+  padding: 25.4mm 25.4mm;
+}
+.dark .a4-page {
+  background: #ffffff;
+  color: #111;
+}
+
+/* Thin scrollbars like Word */
+.word-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.word-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.word-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 8px;
+}
+.dark .word-scroll::-webkit-scrollbar-thumb {
+  background-color: #4b4b4b;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75em 0;
+}
+.tiptap th,
+.tiptap td {
+  border: 1px solid #c1c1c1;
+  padding: 6px 8px;
+  min-width: 40px;
+  vertical-align: top;
+}
+.tiptap th {
+  background: #f3f3f3;
+  font-weight: 600;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Search matches */
+.search-match {
+  background: #ffd965;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.search-current {
+  background: #ff9d00;
+  color: #000;
+  outline: 1px solid #b45309;
+}
+
+/* Atlas images: NodeView handles, wrap modes, crop, guides */
+.tiptap {
+  position: relative;
+}
+.tiptap .atlas-wrap {
+  max-width: 100%;
+}
+.tiptap .atlas-wrap-inline,
+.tiptap .atlas-wrap-square,
+.tiptap .atlas-wrap-tight {
+  max-width: 100%;
+}
+.tiptap .atlas-wrap-behind,
+.tiptap .atlas-wrap-front {
+  max-width: none;
+}
+.atlas-frame {
+  outline: none;
+}
+.atlas-frame.atlas-selected {
+  outline: 2px solid var(--word-blue);
+  outline-offset: 2px;
+}
+.atlas-handle {
+  background: #fff;
+  border: 2px solid var(--word-blue);
+  border-radius: 3px;
+  padding: 0;
+}
+.atlas-handle:hover,
+.atlas-handle:focus-visible {
+  background: var(--word-blue);
+}
+.atlas-size-tip {
+  position: absolute;
+  left: 50%;
+  bottom: -28px;
+  transform: translateX(-50%);
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 20;
+}
+.atlas-caption {
+  font-size: 12px;
+  font-style: italic;
+  color: #555;
+  text-align: center;
+  padding-top: 4px;
+}
+.atlas-reflection img {
+  transform: scaleY(-1);
+  opacity: 0.3;
+  mask-image: linear-gradient(to bottom, transparent 30%, black);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 30%, black);
+}
+.atlas-group {
+  max-width: 100%;
+}
+.atlas-group .atlas-wrap {
+  min-width: 0;
+}
+
+/* Legacy images: selectable */
+.tiptap img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.5em 0;
+}
+.tiptap img.ProseMirror-selectednode {
+  outline: 2px solid var(--word-blue);
+  resize: both;
+  overflow: auto;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.tiptap a {
+  color: var(--word-blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tiptap hr {
+  border: none;
+  border-top: 2px solid #c1c1c1;
+  margin: 1em 0;
+}
+
+.page-break {
+  user-select: none;
+}
+
+/* Read mode: narrow warm column, no page chrome */
+.read-mode .a4-page {
+  box-shadow: none;
+  max-width: 750px;
+  min-height: auto;
+  font-size: 17px;
+  line-height: 1.8;
+  background: #fbf6ec;
+  color: #1f2937;
+}
+
+/* ---- Advanced: comments, track changes, notes ---- */
+.comment-range {
+  background: rgba(255, 213, 79, 0.45);
+  border-bottom: 2px solid #d97706;
+}
+.track-ins {
+  background: rgba(34, 197, 94, 0.18);
+  border-bottom: 2px solid #16a34a;
+  color: #166534;
+}
+.track-del {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  text-decoration: line-through;
+  text-decoration-color: #dc2626;
+}
+.footnote-ref {
+  color: var(--word-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+.toc-block {
+  border: 1px solid #c1c1c1;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+.text-box {
+  position: relative;
+}
+.shape-node {
+  margin: 12px 0;
+}
+.equation-node {
+  padding: 0 2px;
+  border-radius: 3px;
+}
+.equation-node:hover {
+  background: #eef4ff;
+  outline: 1px dashed var(--word-blue);
+  cursor: pointer;
+}
+.dropcap::first-letter {
+  float: left;
+  font-size: 3.2em;
+  line-height: 0.9;
+  padding-right: 6px;
+  font-weight: 700;
+  color: var(--word-blue);
+}
+
+/* Watermark + page borders */
+.page-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+.page-watermark span {
+  transform: rotate(-30deg);
+  font-size: 72px;
+  font-weight: 800;
+  color: rgba(43, 87, 154, 0.1);
+  white-space: nowrap;
+  user-select: none;
+}
+.page-border-single {
+  outline: 2px solid #2b579a;
+  outline-offset: -8px;
+}
+.page-border-double {
+  outline: 6px double #2b579a;
+  outline-offset: -10px;
+}
+
+/* Long-document performance mode: browser-level virtualization */
+.long-doc .tiptap > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
+
+/* Accessibility: visible focus everywhere */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[contenteditable]:focus-visible {
+  outline: 2px solid var(--word-blue);
+  outline-offset: 1px;
+}

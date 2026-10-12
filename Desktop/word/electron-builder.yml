@@ -1,0 +1,30 @@
+appId: com.wordpadpro.app
+productName: WordPad Pro
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: WordPad-Pro-${version}-win.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: WordPad Pro
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  artifactName: WordPad-Pro-${version}-mac.${ext}
+  category: public.app-category.productivity
+dmg:
+  window:
+    width: 540
+    height: 380
