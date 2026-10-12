@@ -53,6 +53,8 @@ import { fileToAtlasSources, dataUrlToAtlasSources } from './features/images/dow
 import { FormatPanel } from './features/images/FormatPanel'
 import { CropOverlay } from './features/images/CropOverlay'
 import { InsertImageModal } from './features/images/InsertImageModal'
+import { ImageEditorModal } from './features/images/ImageEditorModal'
+import { parseEdits, type ImageEdits } from './features/images/editorTypes'
 import type { DocTab, PageSettings, ViewMode, DocComment, StyleDef, Snapshot, AppSettings } from './types'
 import { BUILTIN_STYLES } from './types'
 import { base64ToUtf8, utf8ToBase64, extOf, docxToHtml, htmlToDocxBlob, blobToBase64 } from './lib/files'
@@ -120,6 +122,7 @@ export default function App() {
   const [mergeOpen, setMergeOpen] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [cropTarget, setCropTarget] = useState<{ pos: number; src: string } | null>(null)
+  const [editorTarget, setEditorTarget] = useState<{ pos: number; baseSrc: string; initial: ImageEdits } | null>(null)
   const [focusMode, setFocusMode] = useState(false)
   const [longDoc, setLongDoc] = useState(false)
   const [recovery, setRecovery] = useState<{ name: string; html: string; at: number } | null>(null)
@@ -872,6 +875,7 @@ export default function App() {
   )
 
   // Auto-open Picture Format when an image is selected (Word-style contextual tab)
+  // + double-click opens the built-in image editor (atlas:edit-image from the NodeView)
   useEffect(() => {
     if (!editor) return
     const onSel = () => {
@@ -879,11 +883,28 @@ export default function App() {
         setRightPane((p) => (p === null || p === 'images' ? 'images' : p))
       }
     }
+    const onEditRequest = () => {
+      const found = selectedAtlasImage(editor)
+      if (!found) return
+      const attrs = found.node.attrs as unknown as { src: string; originalSrc: string; editsJson: string }
+      setEditorTarget({ pos: found.pos, baseSrc: attrs.originalSrc || attrs.src, initial: parseEdits(attrs.editsJson ?? '') })
+    }
     editor.on('selectionUpdate', onSel)
+    window.addEventListener('atlas:edit-image', onEditRequest)
     return () => {
       editor.off('selectionUpdate', onSel)
+      window.removeEventListener('atlas:edit-image', onEditRequest)
     }
   }, [editor])
+
+  const applyEditorResult = useCallback(
+    (dataUrl: string, edits: ImageEdits) => {
+      if (!editor || !editorTarget) return
+      setAtlasAttrsAt(editor, editorTarget.pos, { src: dataUrl, editsJson: JSON.stringify(edits) })
+      setEditorTarget(null)
+    },
+    [editor, editorTarget]
+  )
 
   // ---------- fullscreen ----------
   const toggleFullscreen = useCallback(() => {
@@ -1086,6 +1107,7 @@ export default function App() {
           setTemplatesOpen(false)
           setImageModalOpen(false)
           setCropTarget(null)
+          setEditorTarget(null)
         }
         return
       }
@@ -1317,7 +1339,12 @@ export default function App() {
           <TrackPane editor={editor} tracking={tracking} onToggleTracking={() => setTracking((t) => !t)} onClose={() => setRightPane(null)} />
         )}
         {!focusMode && rightPane === 'images' && (
-          <FormatPanel editor={editor} onClose={() => setRightPane(null)} onOpenCrop={openCropForSelection} />
+          <FormatPanel
+            editor={editor}
+            onClose={() => setRightPane(null)}
+            onOpenCrop={openCropForSelection}
+            onOpenEditor={() => window.dispatchEvent(new CustomEvent('atlas:edit-image'))}
+          />
         )}
       </div>
 
@@ -1369,6 +1396,14 @@ export default function App() {
           src={cropTarget.src}
           onApply={applyCrop}
           onClose={() => setCropTarget(null)}
+        />
+      )}
+      {editorTarget && (
+        <ImageEditorModal
+          baseSrc={editorTarget.baseSrc}
+          initial={editorTarget.initial}
+          onApply={applyEditorResult}
+          onClose={() => setEditorTarget(null)}
         />
       )}
     </div>
